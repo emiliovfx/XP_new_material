@@ -1,7 +1,7 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from PIL import Image
+from PIL import Image, ImageTk
 import numpy as np
 
 def convert_png_channels(file_path, scale_choice):
@@ -58,18 +58,48 @@ def replace_obj_texture_lines(obj_path, original_png_name, nrm_name, mat_name):
             new_lines.append(line)
 
     if replaced:
+        messagebox.showinfo("Done", f"OBJ updated!\n\n{os.path.basename(obj_path)}")
         with open(obj_path, "w", encoding="utf-8") as f:
             f.writelines(new_lines)
-        messagebox.showinfo("Done", f"OBJ updated!\n\n{os.path.basename(obj_path)}")
     else:
         messagebox.showwarning("Warning", f"No TEXTURE_NORMAL line with {original_png_name} found in:\n{os.path.basename(obj_path)}")
 
 def gui_main():
     root = tk.Tk()
     root.title("X-Plane PNG Channel Splitter")
+    root.resizable(False, False)  # Prevent window from being stretched
+
+    mainframe = tk.Frame(root, padx=15, pady=10)
+    mainframe.pack()
 
     file_var = tk.StringVar()
-    scale_choice = tk.StringVar(value="full")
+    file_display_var = tk.StringVar(value="No file selected.")
+    preview_image = [None]  # Use list to allow reassignment in nested scope
+
+    # --- FILE PICKER SECTION WITH PREVIEW ---
+    file_frame = tk.LabelFrame(mainframe, text="Select PNG Texture File", padx=10, pady=8)
+    file_frame.pack(fill="x", pady=(0,10))
+
+    tk.Entry(file_frame, textvariable=file_var, width=38).pack(side="left", fill="x", expand=True, padx=(0,6))
+
+    preview_frame = tk.Frame(mainframe)
+    preview_frame.pack()
+    preview_label = tk.Label(preview_frame, image=None)
+    preview_label.pack()
+
+    def show_preview(fname):
+        preview_label.config(image=None)
+        preview_image[0] = None
+        if fname and os.path.exists(fname):
+            try:
+                img = Image.open(fname)
+                # Keep aspect, fit in box
+                max_size = (256, 256)
+                img.thumbnail(max_size, Image.LANCZOS)
+                preview_image[0] = ImageTk.PhotoImage(img)
+                preview_label.config(image=preview_image[0])
+            except Exception:
+                preview_image[0] = None
 
     def browse_file():
         fname = filedialog.askopenfilename(
@@ -78,7 +108,23 @@ def gui_main():
         )
         if fname:
             file_var.set(fname)
+            file_display_var.set("Selected: " + os.path.basename(fname))
+            show_preview(fname)
+        else:
+            file_display_var.set("No file selected.")
+            show_preview(None)
 
+    tk.Button(file_frame, text="Browse...", command=browse_file, width=10).pack(side="right")
+    tk.Label(file_frame, textvariable=file_display_var, fg="gray").pack(side="bottom", fill="x", pady=(6,0))
+
+    # --- RESOLUTION SECTION ---
+    scale_choice = tk.StringVar(value="full")
+    res_frame = tk.LabelFrame(mainframe, text="MAT.png Resolution", padx=10, pady=8)
+    res_frame.pack(fill="x", pady=(0,10))
+    for idx, (txt, val) in enumerate([("Full", "full"), ("Half", "half"), ("Quarter", "quarter")]):
+        tk.Radiobutton(res_frame, text=txt, variable=scale_choice, value=val).pack(side="left", padx=10, pady=2)
+
+    # --- CONVERT BUTTON ---
     def do_convert():
         file_path = file_var.get()
         if not file_path:
@@ -86,7 +132,6 @@ def gui_main():
             return
         rootname, orig_png_name, nrm_name, mat_name = convert_png_channels(file_path, scale_choice.get())
         messagebox.showinfo("Done", f"Saved:\n{nrm_name} (full res)\n{mat_name}")
-
         # Ask about OBJ patching
         if messagebox.askyesno("Update OBJ?", "Do you want to update an .obj file with the new texture lines?"):
             obj_path = filedialog.askopenfilename(
@@ -97,16 +142,7 @@ def gui_main():
                 replace_obj_texture_lines(obj_path, orig_png_name, nrm_name, mat_name)
         root.quit()
 
-    # Layout
-    tk.Label(root, text="PNG File:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
-    tk.Entry(root, textvariable=file_var, width=40).grid(row=0, column=1, padx=5, pady=5)
-    tk.Button(root, text="Browse...", command=browse_file).grid(row=0, column=2, padx=5, pady=5)
-
-    tk.Label(root, text="MAT.png Resolution:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
-    for idx, (txt, val) in enumerate([("Full", "full"), ("Half", "half"), ("Quarter", "quarter")]):
-        tk.Radiobutton(root, text=txt, variable=scale_choice, value=val).grid(row=1, column=1+idx, sticky="w", padx=3)
-
-    tk.Button(root, text="Convert", command=do_convert, width=15).grid(row=2, column=1, columnspan=2, pady=15)
+    tk.Button(mainframe, text="Convert", command=do_convert, width=18, height=2).pack(pady=12)
 
     root.mainloop()
 
