@@ -17,6 +17,12 @@ This script lets you:
 - Run using py xp_Mawmat_Convert.py in a command window.
 - Select a PNG file when prompted.
 - Choose the desired resolution for `_MAT.png`.
+  this can be FULL to preserve the original size, half or quarter.
+  By rescaling the MAT texture you will save VRAM.   The rescaling works in power of 2 rescaling.
+  I.E. If your original texture is 4096 x 4096, it will be rescaled to 2048 x 2048 by half
+  and to 1024 x 1024 by quarter resolution.
+
+- 
 - Choose whether to patch an `.obj` file.
 - Select the `.obj` file if you opt to patch.
 - Your new textures and/or updated OBJ will be saved in the same folder.
