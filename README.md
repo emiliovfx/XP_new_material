@@ -13,6 +13,8 @@ This script lets you:
 
 ## Instructions
 
+- Download the xp_Newmat_Convert.py
+- Run using py xp_Mawmat_Convert.py in a command window.
 - Select a PNG file when prompted.
 - Choose the desired resolution for `_MAT.png`.
 - Choose whether to patch an `.obj` file.
